@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
@@ -125,9 +126,10 @@ namespace Bot_Builder_Echo_Bot_V4
                         // grab team name from previous
                         user.TeamName = text;
 
-                        await SendSuggestedActionsAsync(turnContext, cancellationToken, text);
+                        string teamStatement = $"{text} is a very clever name. ";
+                        await SendSuggestedActionsAsync(turnContext, cancellationToken, teamStatement);
 
-                        convo.Prompt = "switch";
+                        convo.Prompt = "fork";
 
                         // update states
                         await _accessors.TopicState.SetAsync(turnContext, convo);
@@ -137,12 +139,83 @@ namespace Bot_Builder_Echo_Bot_V4
                         await _accessors.UserState.SaveChangesAsync(turnContext);
 
                     }
-                    else if (convo.Prompt == "switch")
+                    else if (convo.Prompt == "fork")
                     {
-                        // grab suggested actions from previous
+                        // grab suggested actions from previous. Set that as the stage
+                        var choice = text;
+                        convo.Stage = choice;
+                        convo.Prompt = "1";
 
-                        await turnContext.SendActivityAsync($"U said {text} right");
+                        // save state
+                        await _accessors.TopicState.SetAsync(turnContext, convo);
+                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
+
+                        if (choice == "WDIS")
+                        {
+                            await turnContext.SendActivityAsync($"Which two players are you choosing between?");
+                        }
+                        else if (choice == "Complaint")
+                        {
+                            await turnContext.SendActivityAsync($"Ok! What do you have to say?");
+                        }
+                        else if (choice == "Question")
+                        {
+                            await turnContext.SendActivityAsync($"");
+                        }
+                        else
+                        {
+                            await turnContext.SendActivityAsync($"Tell me a little bit about yourself.");
+                            convo.Stage = "Lonely";
+
+                            // save default state
+                            await _accessors.TopicState.SetAsync(turnContext, convo);
+                            await _accessors.ConversationState.SaveChangesAsync(turnContext);
+
+                        }
+
                     }
+                }
+
+                else if (convo.Stage == "WDIS")
+                {
+
+                    string player1 = "";
+                    string player2 = "";
+
+                    if (text.Contains("or"))
+                    {
+                        player1 = Regex.Split(text, " or ")[0];
+                        player2 = Regex.Split(text, " or ")[1];
+                    }
+                    else if (text.Contains(" and "))
+                    {
+                        player1 = Regex.Split(text, " and ")[0];
+                        player2 = Regex.Split(text, " and ")[1];
+                    }
+                    else
+                    {
+                        await turnContext.SendActivityAsync($"Sorry, didn't get that.");
+                    }
+                    string[] players = { player1, player2 };
+                    Random ran = new Random();
+                    string choice = players[ran.Next(0, players.Length)];
+                    await turnContext.SendActivityAsync($"Start {choice}.");
+                }
+                else if (convo.Stage == "Complaint")
+                {
+                    await turnContext.SendActivityAsync($"Thank you for your input.");
+                    convo.Stage = "";
+                }
+                else if (convo.Stage == "Question")
+                {
+
+                }
+                else
+                {
+                    string[] responses = { "Interesting, tell me more", "Why is that?", "How cool" };
+                    Random ran = new Random();
+                    string reply = responses[ran.Next(0,responses.Length)];
+                    await turnContext.SendActivityAsync(reply);
                 }
             }
         }
@@ -156,16 +229,17 @@ namespace Bot_Builder_Echo_Bot_V4
         /// <param name="cancellationToken" >(Optional) A <see cref="CancellationToken"/> that can be used by other objects
         /// or threads to receive notice of cancellation.</param>
         /// <returns>A <see cref="Task"/> that represents the work queued to execute.</returns>
-        private static async Task SendSuggestedActionsAsync(ITurnContext turnContext, CancellationToken cancellationToken, String teamName)
+        private static async Task SendSuggestedActionsAsync(ITurnContext turnContext, CancellationToken cancellationToken, String teamStatement)
         {
-            var reply = turnContext.Activity.CreateReply($"What is the color of {teamName}?");
+            var reply = turnContext.Activity.CreateReply($"{teamStatement} What can I help you with?");
             reply.SuggestedActions = new SuggestedActions()
             {
                 Actions = new List<CardAction>()
                 {
-                    new CardAction() { Title = "Red", Type = ActionTypes.ImBack, Value = "Red" },
-                    new CardAction() { Title = "Yellow", Type = ActionTypes.ImBack, Value = "Yellow" },
-                    new CardAction() { Title = "Blue", Type = ActionTypes.ImBack, Value = "Blue" },
+                    new CardAction() { Title = "Which player should I start?", Type = ActionTypes.ImBack, Value = "WDIS" },
+                    new CardAction() { Title = "I'd like to file a complaint or make a suggestion.", Type = ActionTypes.ImBack, Value = "Complaint" },
+                    new CardAction() { Title = "I have a specific question.", Type = ActionTypes.ImBack, Value = "Question" },
+                    new CardAction() { Title = "I just want someone to talk to", Type = ActionTypes.ImBack, Value = "Lonely" },
                 },
             };
             await turnContext.SendActivityAsync(reply, cancellationToken);
