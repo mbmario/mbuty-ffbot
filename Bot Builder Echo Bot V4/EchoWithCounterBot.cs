@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections.Generic;
@@ -11,6 +13,7 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Bot_Builder_Echo_Bot_V4
 {
@@ -31,12 +34,6 @@ namespace Bot_Builder_Echo_Bot_V4
         private readonly ILogger _logger;
         private DialogSet _dialogs;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EchoWithCounterBot"/> class.
-        /// </summary>
-        /// <param name="accessors">A class containing <see cref="IStatePropertyAccessor{T}"/> used to manage state.</param>
-        /// <param name="loggerFactory">A <see cref="ILoggerFactory"/> that is hooked to the Azure App Service provider.</param>
-        /// <seealso cref="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.1#windows-eventlog-provider"/>
         public EchoWithCounterBot(EchoBotAccessors accessors, ILoggerFactory loggerFactory)
         {
             if (loggerFactory == null)
@@ -49,19 +46,7 @@ namespace Bot_Builder_Echo_Bot_V4
             _accessors = accessors ?? throw new System.ArgumentNullException(nameof(accessors));
         }
 
-        /// <summary>
-        /// Every conversation turn for our Echo Bot will call this method.
-        /// There are no dialogs used, since it's "single turn" processing, meaning a single
-        /// request and response.
-        /// </summary>
-        /// <param name="turnContext">A <see cref="ITurnContext"/> containing all the data needed
-        /// for processing this conversation turn. </param>
-        /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects
-        /// or threads to receive notice of cancellation.</param>
-        /// <returns>A <see cref="Task"/> that represents the work queued to execute.</returns>
-        /// <seealso cref="BotStateSet"/>
-        /// <seealso cref="ConversationState"/>
-        /// <seealso cref="IMiddleware"/>
+        // Every conversation turn for our Echo Bot will call this method.
         public async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (turnContext == null)
@@ -70,8 +55,6 @@ namespace Bot_Builder_Echo_Bot_V4
             }
 
             // Handle Message activity type, which is the main activity type for shown within a conversational interface
-            // Message activities may contain text, speech, interactive cards, and binary or unknown attachments.
-            // see https://aka.ms/about-bot-activity-message to learn more about the message and other activity types
             if (turnContext.Activity.Type == ActivityTypes.Message)
             {
                 // get states
@@ -80,6 +63,15 @@ namespace Bot_Builder_Echo_Bot_V4
 
                 // get prev response
                 var text = turnContext.Activity.Text;
+
+                //// TODO: shortcuts in case of card clicks
+                //if (text == "WDIS" || text == "Complaint")
+                //{
+                //    convo.Stage = text;
+                //    // save state
+                //    await _accessors.TopicState.SetAsync(turnContext, convo);
+                //    await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                //}
 
                 // beginning round of questions to gather info
                 if (convo.Stage == "intro")
@@ -127,7 +119,12 @@ namespace Bot_Builder_Echo_Bot_V4
                         user.TeamName = text;
 
                         string teamStatement = $"{text} is a very clever name. ";
-                        await SendSuggestedActionsAsync(turnContext, cancellationToken, teamStatement);
+                        await turnContext.SendActivityAsync(teamStatement);
+
+                        var optionsCard = CreateOptionsCardAttachment();
+                        var response = CreateResponse(turnContext.Activity, optionsCard);
+
+                        await turnContext.SendActivityAsync(response).ConfigureAwait(false);
 
                         convo.Prompt = "fork";
 
@@ -175,7 +172,6 @@ namespace Bot_Builder_Echo_Bot_V4
 
                     }
                 }
-
                 else if (convo.Stage == "WDIS")
                 {
 
@@ -192,57 +188,84 @@ namespace Bot_Builder_Echo_Bot_V4
                         player1 = Regex.Split(text, " and ")[0];
                         player2 = Regex.Split(text, " and ")[1];
                     }
+
+                    if (text.Contains(" or ") || text.Contains(" and "))
+                    {
+                        string[] players = { player1, player2 };
+                        Random ran = new Random();
+                        string choice = players[ran.Next(0, players.Length)];
+                        await turnContext.SendActivityAsync($"Start {choice}.");
+
+                        convo.Stage = "";
+                        await _accessors.TopicState.SetAsync(turnContext, convo);
+                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                    }
                     else
                     {
-                        await turnContext.SendActivityAsync($"Sorry, didn't get that.");
+                        await turnContext.SendActivityAsync($"Sorry, I didn't get that.");
+
                     }
-                    string[] players = { player1, player2 };
-                    Random ran = new Random();
-                    string choice = players[ran.Next(0, players.Length)];
-                    await turnContext.SendActivityAsync($"Start {choice}.");
                 }
                 else if (convo.Stage == "Complaint")
                 {
                     await turnContext.SendActivityAsync($"Thank you for your input.");
                     convo.Stage = "";
+                    await _accessors.TopicState.SetAsync(turnContext, convo);
+                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
                 }
                 else if (convo.Stage == "Question")
                 {
-
+                    await turnContext.SendActivityAsync($"This feature coming soon.");
+                    convo.Stage = "";
+                    await _accessors.TopicState.SetAsync(turnContext, convo);
+                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
                 }
                 else
                 {
-                    string[] responses = { "Interesting, tell me more", "Why is that?", "How cool" };
+                    string[] responses = { "Interesting, tell me more", "Why is that?", "How cool", "When did that start?" };
                     Random ran = new Random();
                     string reply = responses[ran.Next(0,responses.Length)];
                     await turnContext.SendActivityAsync(reply);
                 }
             }
         }
-        /// <summary>
-        /// Creates and sends an activity with suggested actions to the user. When the user
-        /// clicks one of the buttons the text value from the <see cref="CardAction"/> will be
-        /// displayed in the channel just as if the user entered the text. There are multiple
-        /// <see cref="ActionTypes"/> that may be used for different situations.
-        /// </summary>
-        /// <param name="turnContext">Provides the <see cref="ITurnContext"/> for the turn of the bot.</param>
-        /// <param name="cancellationToken" >(Optional) A <see cref="CancellationToken"/> that can be used by other objects
-        /// or threads to receive notice of cancellation.</param>
-        /// <returns>A <see cref="Task"/> that represents the work queued to execute.</returns>
-        private static async Task SendSuggestedActionsAsync(ITurnContext turnContext, CancellationToken cancellationToken, String teamStatement)
+
+        //// Creates and sends an activity with suggested actions to the user. 
+        //private static async Task SendSuggestedActionsAsync(ITurnContext turnContext, CancellationToken cancellationToken, String teamStatement)
+        //{
+        //    var reply = turnContext.Activity.CreateReply($"{teamStatement} What can I help you with?");
+
+        //    reply.SuggestedActions = new SuggestedActions()
+        //    {
+        //        Actions = new List<CardAction>()
+        //        {
+        //            new CardAction() { Title = "Which player should I start?", Type = ActionTypes.ImBack, Value = "WDIS" },
+        //            new CardAction() { Title = "I'd like to file a complaint or make a suggestion.", Type = ActionTypes.ImBack, Value = "Complaint" },
+        //            new CardAction() { Title = "I have a specific question.", Type = ActionTypes.ImBack, Value = "Question" },
+        //            new CardAction() { Title = "I just want someone to talk to", Type = ActionTypes.ImBack, Value = "Lonely" },
+        //        },
+        //    };
+        //    await turnContext.SendActivityAsync(reply, cancellationToken);
+        //}
+
+        // load attachment from file
+
+        private Attachment CreateOptionsCardAttachment()
         {
-            var reply = turnContext.Activity.CreateReply($"{teamStatement} What can I help you with?");
-            reply.SuggestedActions = new SuggestedActions()
+            var adaptiveCard = File.ReadAllText(@".\Resources\optionsCard.json");
+            return new Attachment()
             {
-                Actions = new List<CardAction>()
-                {
-                    new CardAction() { Title = "Which player should I start?", Type = ActionTypes.ImBack, Value = "WDIS" },
-                    new CardAction() { Title = "I'd like to file a complaint or make a suggestion.", Type = ActionTypes.ImBack, Value = "Complaint" },
-                    new CardAction() { Title = "I have a specific question.", Type = ActionTypes.ImBack, Value = "Question" },
-                    new CardAction() { Title = "I just want someone to talk to", Type = ActionTypes.ImBack, Value = "Lonely" },
-                },
+                ContentType = "application/vnd.microsoft.card.adaptive",
+                Content = JsonConvert.DeserializeObject(adaptiveCard),
             };
-            await turnContext.SendActivityAsync(reply, cancellationToken);
+        }
+
+        // Create an attachment message response.
+        private Activity CreateResponse(Activity activity, Attachment attachment)
+        {
+            var response = activity.CreateReply();
+            response.Attachments = new List<Attachment>() { attachment };
+            return response;
         }
     }
 }

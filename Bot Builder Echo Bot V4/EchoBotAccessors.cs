@@ -32,7 +32,9 @@ namespace Bot_Builder_Echo_Bot_V4
         /// <remarks>Accessors require a unique name.</remarks>
         /// <value>The accessor name for the counter accessor.</value>
         public static string CounterStateName { get; } = $"{nameof(EchoBotAccessors)}.CounterState";
+
         public static string UserProfileName { get; } = $"{nameof(EchoBotAccessors)}.UserProfile";
+
         public static string TopicStateName { get; } = $"{nameof(EchoBotAccessors)}.TopicState";
 
         /// <summary>
@@ -42,7 +44,9 @@ namespace Bot_Builder_Echo_Bot_V4
         /// The accessor stores the turn count for the conversation.
         /// </value>
         public IStatePropertyAccessor<CounterState> CounterState { get; set; }
+
         public IStatePropertyAccessor<TopicState> TopicState { get; set; }
+
         public IStatePropertyAccessor<UserProfile> UserProfile { get; set; }
 
         /// <summary>
@@ -50,6 +54,7 @@ namespace Bot_Builder_Echo_Bot_V4
         /// </summary>
         /// <value>The <see cref="ConversationState"/> object.</value>
         public ConversationState ConversationState { get; }
+
         public UserState UserState { get; }
 
     }
