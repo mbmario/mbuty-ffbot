@@ -28,20 +28,20 @@ namespace Bot_Builder_Echo_Bot_V4
     /// <see cref="IStatePropertyAccessor{T}"/> object are created with a singleton lifetime.
     /// </summary>
     /// <seealso cref="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-2.1"/>
-    public class EchoWithCounterBot : IBot
+    public class FFBot : IBot
     {
         private readonly EchoBotAccessors _accessors;
         private readonly ILogger _logger;
         private DialogSet _dialogs;
 
-        public EchoWithCounterBot(EchoBotAccessors accessors, ILoggerFactory loggerFactory)
+        public FFBot(EchoBotAccessors accessors, ILoggerFactory loggerFactory)
         {
             if (loggerFactory == null)
             {
                 throw new System.ArgumentNullException(nameof(loggerFactory));
             }
 
-            _logger = loggerFactory.CreateLogger<EchoWithCounterBot>();
+            _logger = loggerFactory.CreateLogger<FFBot>();
             _logger.LogTrace("ffbot turn start.");
             _accessors = accessors ?? throw new System.ArgumentNullException(nameof(accessors));
         }
@@ -75,7 +75,7 @@ namespace Bot_Builder_Echo_Bot_V4
 
                 // beginning round of questions to gather info
                 if (convo.Stage == "intro")
-                {
+                { 
                     if (convo.Prompt == "hi")
                     {
                         await turnContext.SendActivityAsync("Hello! I'm the ffbot. Who are you?");

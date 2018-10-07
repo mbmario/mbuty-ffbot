@@ -1,0 +1,12 @@
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\BotConfiguration.bot
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\FFBot.deps.json
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\FFBot.runtimeconfig.json
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\FFBot.runtimeconfig.dev.json
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\FFBot.dll
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\FFBot.pdb
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\FFBot.csproj.CoreCompileInputs.cache
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\FFBot.AssemblyInfoInputs.cache
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\FFBot.AssemblyInfo.cs
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\FFBot.dll
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\FFBot.pdb
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\FFBot.csprojAssemblyReference.cache
