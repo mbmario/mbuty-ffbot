@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder;
@@ -62,62 +63,112 @@ namespace Bot_Builder_Echo_Bot_V4
         /// <seealso cref="IMiddleware"/>
         public async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (turnContext == null)
+            {
+                throw new ArgumentNullException(nameof(turnContext));
+            }
+
             // Handle Message activity type, which is the main activity type for shown within a conversational interface
             // Message activities may contain text, speech, interactive cards, and binary or unknown attachments.
             // see https://aka.ms/about-bot-activity-message to learn more about the message and other activity types
             if (turnContext.Activity.Type == ActivityTypes.Message)
             {
-                // Get the conversation state from the turn context.
+                // get states
                 var convo = await _accessors.TopicState.GetAsync(turnContext, () => new TopicState());
-
-                // Get the user state from the turn context.
                 var user = await _accessors.UserProfile.GetAsync(turnContext, () => new UserProfile());
 
-                // Ask user name. The Prompt was initialiazed as "hi" in the TopicState.cs file.
-                if (convo.Prompt == "hi")
-                {   
-                    await turnContext.SendActivityAsync("Hello! I'm the ffbot. Who are you?");
+                // get prev response
+                var text = turnContext.Activity.Text;
 
-                    // Set the Prompt to ask the next question for this conversation
-                    convo.Prompt = "askTeam";
-
-                    // Set the property using the accessor
-                    await _accessors.TopicState.SetAsync(turnContext, convo);
-
-                    // Save the new prompt into the conversation state.
-                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
-                }
-                else if (convo.Prompt == "askTeam")
+                // beginning round of questions to gather info
+                if (convo.Stage == "intro")
                 {
-                    // Set the UserName that is defined in the UserProfile class
-                    user.UserName = turnContext.Activity.Text;
+                    if (convo.Prompt == "hi")
+                    {
+                        await turnContext.SendActivityAsync("Hello! I'm the ffbot. Who are you?");
 
-                    // Use the user name to prompt the user for phone number
-                    await turnContext.SendActivityAsync($"Hello, {user.UserName}. What's your team name?");
+                        // Set the Prompt to ask the next question for this conversation
+                        convo.Prompt = "askTeam";
 
-                    // Set the Prompt now that we have collected all the data
-                    convo.Prompt = "menu";
+                        // save states
+                        await _accessors.TopicState.SetAsync(turnContext, convo);
+                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                    }
+                    else if (convo.Prompt == "askTeam")
+                    {
+                        // store intro's prompt's user
+                        user.UserName=text;
 
-                    await _accessors.TopicState.SetAsync(turnContext, convo);
-                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                        // Use the user name to prompt the user for team name
+                        await turnContext.SendActivityAsync($"Hello, {user.UserName}. What's your team name?");
 
-                    await _accessors.UserProfile.SetAsync(turnContext, user);
-                    await _accessors.UserState.SaveChangesAsync(turnContext);
+                        // Set the Prompt to ask the next question for this conversation
+                        convo.Stage = "menu";
+                        convo.Prompt = "ask";
+
+                        // update states
+                        await _accessors.TopicState.SetAsync(turnContext, convo);
+                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
+
+                        await _accessors.UserProfile.SetAsync(turnContext, user);
+                        await _accessors.UserState.SaveChangesAsync(turnContext);
+
+                    }
+
                 }
-                else if (convo.Prompt == "menu")
+
+                // show menu in ask, process it in switch
+                else if (convo.Stage == "menu")
                 {
-                    // Set the TelephoneNumber that is defined in the UserProfile class
-                    user.TeamName = turnContext.Activity.Text;
+                    if (convo.Prompt == "ask")
+                    {
+                        // grab team name from previous
+                        user.TeamName = text;
 
-                    await turnContext.SendActivityAsync($"{user.TeamName}. That's a pretty clever team name. Here are some things I can do. Click on one");
+                        await SendSuggestedActionsAsync(turnContext, cancellationToken, text);
 
-                    // initialize prompt
-                    convo.Prompt = ""; // End of conversation
-                    await _accessors.TopicState.SetAsync(turnContext, convo);
-                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                        convo.Prompt = "switch";
+
+                        // update states
+                        await _accessors.TopicState.SetAsync(turnContext, convo);
+                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
+
+                        await _accessors.UserProfile.SetAsync(turnContext, user);
+                        await _accessors.UserState.SaveChangesAsync(turnContext);
+
+                    }
+                    else if (convo.Prompt == "switch")
+                    {
+                        // grab suggested actions from previous
+
+                        await turnContext.SendActivityAsync($"U said {text} right");
+                    }
                 }
-
             }
+        }
+        /// <summary>
+        /// Creates and sends an activity with suggested actions to the user. When the user
+        /// clicks one of the buttons the text value from the <see cref="CardAction"/> will be
+        /// displayed in the channel just as if the user entered the text. There are multiple
+        /// <see cref="ActionTypes"/> that may be used for different situations.
+        /// </summary>
+        /// <param name="turnContext">Provides the <see cref="ITurnContext"/> for the turn of the bot.</param>
+        /// <param name="cancellationToken" >(Optional) A <see cref="CancellationToken"/> that can be used by other objects
+        /// or threads to receive notice of cancellation.</param>
+        /// <returns>A <see cref="Task"/> that represents the work queued to execute.</returns>
+        private static async Task SendSuggestedActionsAsync(ITurnContext turnContext, CancellationToken cancellationToken, String teamName)
+        {
+            var reply = turnContext.Activity.CreateReply($"What is the color of {teamName}?");
+            reply.SuggestedActions = new SuggestedActions()
+            {
+                Actions = new List<CardAction>()
+                {
+                    new CardAction() { Title = "Red", Type = ActionTypes.ImBack, Value = "Red" },
+                    new CardAction() { Title = "Yellow", Type = ActionTypes.ImBack, Value = "Yellow" },
+                    new CardAction() { Title = "Blue", Type = ActionTypes.ImBack, Value = "Blue" },
+                },
+            };
+            await turnContext.SendActivityAsync(reply, cancellationToken);
         }
     }
 }
