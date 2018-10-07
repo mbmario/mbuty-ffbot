@@ -27,6 +27,7 @@ namespace Bot_Builder_Echo_Bot_V4
     {
         private readonly EchoBotAccessors _accessors;
         private readonly ILogger _logger;
+        private DialogSet _dialogs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EchoWithCounterBot"/> class.
@@ -42,7 +43,7 @@ namespace Bot_Builder_Echo_Bot_V4
             }
 
             _logger = loggerFactory.CreateLogger<EchoWithCounterBot>();
-            _logger.LogTrace("EchoBot turn start.");
+            _logger.LogTrace("ffbot turn start.");
             _accessors = accessors ?? throw new System.ArgumentNullException(nameof(accessors));
         }
 
@@ -72,30 +73,30 @@ namespace Bot_Builder_Echo_Bot_V4
                 // Get the user state from the turn context.
                 var user = await _accessors.UserProfile.GetAsync(turnContext, () => new UserProfile());
 
-                // Ask user name. The Prompt was initialiazed as "askName" in the TopicState.cs file.
-                if (convo.Prompt == "askName")
-                {
-                    await turnContext.SendActivityAsync("What is your name?");
+                // Ask user name. The Prompt was initialiazed as "hi" in the TopicState.cs file.
+                if (convo.Prompt == "hi")
+                {   
+                    await turnContext.SendActivityAsync("Hello! I'm the ffbot. Who are you?");
 
                     // Set the Prompt to ask the next question for this conversation
-                    convo.Prompt = "askNumber";
+                    convo.Prompt = "askTeam";
 
                     // Set the property using the accessor
                     await _accessors.TopicState.SetAsync(turnContext, convo);
 
-                    //Save the new prompt into the conversation state.
+                    // Save the new prompt into the conversation state.
                     await _accessors.ConversationState.SaveChangesAsync(turnContext);
                 }
-                else if (convo.Prompt == "askNumber")
+                else if (convo.Prompt == "askTeam")
                 {
                     // Set the UserName that is defined in the UserProfile class
                     user.UserName = turnContext.Activity.Text;
 
                     // Use the user name to prompt the user for phone number
-                    await turnContext.SendActivityAsync($"Hello, {user.UserName}. What's your telephone number?");
+                    await turnContext.SendActivityAsync($"Hello, {user.UserName}. What's your team name?");
 
                     // Set the Prompt now that we have collected all the data
-                    convo.Prompt = "confirmation";
+                    convo.Prompt = "menu";
 
                     await _accessors.TopicState.SetAsync(turnContext, convo);
                     await _accessors.ConversationState.SaveChangesAsync(turnContext);
@@ -103,18 +104,19 @@ namespace Bot_Builder_Echo_Bot_V4
                     await _accessors.UserProfile.SetAsync(turnContext, user);
                     await _accessors.UserState.SaveChangesAsync(turnContext);
                 }
-                else if (convo.Prompt == "confirmation")
+                else if (convo.Prompt == "menu")
                 {
                     // Set the TelephoneNumber that is defined in the UserProfile class
-                    user.TelephoneNumber = turnContext.Activity.Text;
+                    user.TeamName = turnContext.Activity.Text;
 
-                    await turnContext.SendActivityAsync($"Got it, {user.UserName}. I'll call you later.");
+                    await turnContext.SendActivityAsync($"{user.TeamName}. That's a pretty clever team name. Here are some things I can do. Click on one");
 
                     // initialize prompt
                     convo.Prompt = ""; // End of conversation
                     await _accessors.TopicState.SetAsync(turnContext, convo);
                     await _accessors.ConversationState.SaveChangesAsync(turnContext);
                 }
+
             }
         }
     }

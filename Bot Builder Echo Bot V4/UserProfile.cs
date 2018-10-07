@@ -8,6 +8,6 @@ namespace Bot_Builder_Echo_Bot_V4
     public class UserProfile
     {
         public string UserName { get; set; }
-        public string TelephoneNumber { get; set; }
+        public string TeamName { get; set; }
     }
 }
