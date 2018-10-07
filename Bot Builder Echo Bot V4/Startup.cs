@@ -87,6 +87,12 @@ namespace Bot_Builder_Echo_Bot_V4
                 // is restarted, everything stored in memory will be gone.
                 IStorage dataStore = new MemoryStorage();
 
+                var conversationState = new ConversationState(dataStore);
+                options.State.Add(conversationState);
+
+                var userState = new UserState(dataStore);
+                options.State.Add(userState);
+
                 // For production bots use the Azure Blob or
                 // Azure CosmosDB storage providers. For the Azure
                 // based storage providers, add the Microsoft.Bot.Builder.Azure
@@ -107,7 +113,6 @@ namespace Bot_Builder_Echo_Bot_V4
 
                 // Create Conversation State object.
                 // The Conversation State object is where we persist anything at the conversation-scope.
-                var conversationState = new ConversationState(dataStore);
 
                 options.State.Add(conversationState);
             });
@@ -128,12 +133,23 @@ namespace Bot_Builder_Echo_Bot_V4
                     throw new InvalidOperationException("ConversationState must be defined and added before adding conversation-scoped state accessors.");
                 }
 
+                var userState = options.State.OfType<UserState>().FirstOrDefault();
+                if (userState == null)
+                {
+                    throw new InvalidOperationException("UserState must be defined and added before adding user-scoped state accessors.");
+                }
+
                 // Create the custom state accessor.
                 // State accessors enable other components to read and write individual properties of state.
-                var accessors = new EchoBotAccessors(conversationState)
+                var accessors = new EchoBotAccessors(conversationState, userState)
                 {
-                    CounterState = conversationState.CreateProperty<CounterState>(EchoBotAccessors.CounterStateName),
+                    TopicState = conversationState.CreateProperty<TopicState>("TopicState"),
+                    UserProfile = userState.CreateProperty<UserProfile>("UserProfile"),
                 };
+
+                return accessors;
+
+
 
                 return accessors;
             });

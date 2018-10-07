@@ -1,9 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 
@@ -64,24 +67,54 @@ namespace Bot_Builder_Echo_Bot_V4
             if (turnContext.Activity.Type == ActivityTypes.Message)
             {
                 // Get the conversation state from the turn context.
-                var state = await _accessors.CounterState.GetAsync(turnContext, () => new CounterState());
+                var convo = await _accessors.TopicState.GetAsync(turnContext, () => new TopicState());
 
-                // Bump the turn count for this conversation.
-                state.TurnCount++;
+                // Get the user state from the turn context.
+                var user = await _accessors.UserProfile.GetAsync(turnContext, () => new UserProfile());
 
-                // Set the property using the accessor.
-                await _accessors.CounterState.SetAsync(turnContext, state);
+                // Ask user name. The Prompt was initialiazed as "askName" in the TopicState.cs file.
+                if (convo.Prompt == "askName")
+                {
+                    await turnContext.SendActivityAsync("What is your name?");
 
-                // Save the new turn count into the conversation state.
-                await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                    // Set the Prompt to ask the next question for this conversation
+                    convo.Prompt = "askNumber";
 
-                // Echo back to the user whatever they typed.
-                var responseMessage = $"Turn {state.TurnCount}: You sent '{turnContext.Activity.Text}'\n";
-                await turnContext.SendActivityAsync(responseMessage);
-            }
-            else
-            {
-                await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
+                    // Set the property using the accessor
+                    await _accessors.TopicState.SetAsync(turnContext, convo);
+
+                    //Save the new prompt into the conversation state.
+                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                }
+                else if (convo.Prompt == "askNumber")
+                {
+                    // Set the UserName that is defined in the UserProfile class
+                    user.UserName = turnContext.Activity.Text;
+
+                    // Use the user name to prompt the user for phone number
+                    await turnContext.SendActivityAsync($"Hello, {user.UserName}. What's your telephone number?");
+
+                    // Set the Prompt now that we have collected all the data
+                    convo.Prompt = "confirmation";
+
+                    await _accessors.TopicState.SetAsync(turnContext, convo);
+                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
+
+                    await _accessors.UserProfile.SetAsync(turnContext, user);
+                    await _accessors.UserState.SaveChangesAsync(turnContext);
+                }
+                else if (convo.Prompt == "confirmation")
+                {
+                    // Set the TelephoneNumber that is defined in the UserProfile class
+                    user.TelephoneNumber = turnContext.Activity.Text;
+
+                    await turnContext.SendActivityAsync($"Got it, {user.UserName}. I'll call you later.");
+
+                    // initialize prompt
+                    convo.Prompt = ""; // End of conversation
+                    await _accessors.TopicState.SetAsync(turnContext, convo);
+                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                }
             }
         }
     }
