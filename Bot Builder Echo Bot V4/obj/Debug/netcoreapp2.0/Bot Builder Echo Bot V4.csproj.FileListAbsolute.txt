@@ -1,0 +1,12 @@
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\BotConfiguration.bot
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.deps.json
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.runtimeconfig.json
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.runtimeconfig.dev.json
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.dll
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\bin\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.pdb
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.csprojAssemblyReference.cache
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.csproj.CoreCompileInputs.cache
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.AssemblyInfoInputs.cache
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.AssemblyInfo.cs
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.dll
+C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\Bot Builder Echo Bot V4\obj\Debug\netcoreapp2.0\Bot Builder Echo Bot V4.pdb
