@@ -1,0 +1,38 @@
+﻿{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.0",
+  "body": [
+    {
+      "type": "Image",
+      "url": "https://sports.cbsimg.net/images/blogs/jon-ryan1-mccarthy-face-450.jpg",
+      "size": "stretch"
+    },
+    {
+      "type": "TextBlock",
+      "size": "default",
+      "isSubtle": "yes",
+      "text": "",
+      "wrap": true,
+      "maxLines": 0
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Who Do I Start?",
+      "data": "WDIS"
+    },
+    {
+      "type": "Action.Submit",
+      "title": "I'd like to file a complaint.",
+      "data": "Complaint"
+    },
+
+    {
+      "type": "Action.Submit",
+      "title": "I just want someone to talk to",
+      "data": "Lonely"
+    }
+  ]
+}
