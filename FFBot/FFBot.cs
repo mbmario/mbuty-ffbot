@@ -15,7 +15,7 @@ using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Bot_Builder_Echo_Bot_V4
+namespace FFBot
 {
     /// <summary>
     /// Represents a bot that processes incoming activities.
@@ -23,18 +23,18 @@ namespace Bot_Builder_Echo_Bot_V4
     /// This is a Transient lifetime service.  Transient lifetime services are created
     /// each time they're requested. For each Activity received, a new instance of this
     /// class is created. Objects that are expensive to construct, or have a lifetime
-    /// beyond the single turn, should be carefully managed.
+    /// beyond the single turn, should be carefully managed.E
     /// For example, the <see cref="MemoryStorage"/> object and associated
     /// <see cref="IStatePropertyAccessor{T}"/> object are created with a singleton lifetime.
     /// </summary>
     /// <seealso cref="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-2.1"/>
     public class FFBot : IBot
     {
-        private readonly EchoBotAccessors _accessors;
+        private readonly FFBotAccessors _accessors;
         private readonly ILogger _logger;
         private DialogSet _dialogs;
 
-        public FFBot(EchoBotAccessors accessors, ILoggerFactory loggerFactory)
+        public FFBot(FFBotAccessors accessors, ILoggerFactory loggerFactory)
         {
             if (loggerFactory == null)
             {
@@ -78,7 +78,7 @@ namespace Bot_Builder_Echo_Bot_V4
                 { 
                     if (convo.Prompt == "hi")
                     {
-                        await turnContext.SendActivityAsync("Hello! I'm the fot. Who are you?");
+                        await turnContext.SendActivityAsync("Hello! I'm the ffbot. Who are you?");
 
                         // Set the Prompt to ask the next question for this conversation
                         convo.Prompt = "askTeam";

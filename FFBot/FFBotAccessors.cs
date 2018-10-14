@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Bot.Builder;
 
-namespace Bot_Builder_Echo_Bot_V4
+namespace FFBot
 {
     /// <summary>
     /// This class is created as a Singleton and passed into the IBot-derived constructor.
@@ -12,14 +12,14 @@ namespace Bot_Builder_Echo_Bot_V4
     ///  - See the Startup.cs file for more details on creating the Singleton that gets
     ///    injected into the constructor.
     /// </summary>
-    public class EchoBotAccessors
+    public class FFBotAccessors
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="EchoBotAccessors"/> class.
+        /// Initializes a new instance of the <see cref="FFBotAccessors"/> class.
         /// Contains the <see cref="ConversationState"/> and associated <see cref="IStatePropertyAccessor{T}"/>.
         /// </summary>
         /// <param name="conversationState">The state object that stores the counter.</param>
-        public EchoBotAccessors(ConversationState conversationState, UserState userState)
+        public FFBotAccessors(ConversationState conversationState, UserState userState)
         {
             ConversationState = conversationState ?? throw new ArgumentNullException(nameof(conversationState));
             UserState = userState ?? throw new ArgumentNullException(nameof(userState));
@@ -31,11 +31,11 @@ namespace Bot_Builder_Echo_Bot_V4
         /// </summary>
         /// <remarks>Accessors require a unique name.</remarks>
         /// <value>The accessor name for the counter accessor.</value>
-        public static string CounterStateName { get; } = $"{nameof(EchoBotAccessors)}.CounterState";
+        public static string CounterStateName { get; } = $"{nameof(FFBotAccessors)}.CounterState";
 
-        public static string UserProfileName { get; } = $"{nameof(EchoBotAccessors)}.UserProfile";
+        public static string UserProfileName { get; } = $"{nameof(FFBotAccessors)}.UserProfile";
 
-        public static string TopicStateName { get; } = $"{nameof(EchoBotAccessors)}.TopicState";
+        public static string TopicStateName { get; } = $"{nameof(FFBotAccessors)}.TopicState";
 
         /// <summary>
         /// Gets or sets the <see cref="IStatePropertyAccessor{T}"/> for CounterState.

@@ -16,17 +16,17 @@
     {
       "type": "abs",
       "id": "3",
-      "name": "Bot_Builder_Echo_Bot_V4-abs"
+      "name": "FFBot-abs"
     },
     {
       "type": "appInsights",
       "id": "4",
-      "name": "Bot_Builder_Echo_Bot_V4-insights"
+      "name": "FFBot-insights"
     },
     {
       "type": "blob",
       "id": "5",
-      "name": "Bot_Builder_Echo_Bot_V4-blob",
+      "name": "FFBot-blob",
       "container": "botstatestore"
     }
   ]
