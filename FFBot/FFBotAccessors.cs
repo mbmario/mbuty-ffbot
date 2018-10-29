@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Dialogs;
 
 namespace FFBot
 {
@@ -37,6 +38,8 @@ namespace FFBot
 
         public static string TopicStateName { get; } = $"{nameof(FFBotAccessors)}.TopicState";
 
+        public const string DialogStateAccessorName = "FFBot.DialogState";
+
         /// <summary>
         /// Gets or sets the <see cref="IStatePropertyAccessor{T}"/> for CounterState.
         /// </summary>
@@ -48,6 +51,8 @@ namespace FFBot
         public IStatePropertyAccessor<TopicState> TopicState { get; set; }
 
         public IStatePropertyAccessor<UserProfile> UserProfile { get; set; }
+
+        public IStatePropertyAccessor<DialogState> DialogStateAccessor { get; set; }
 
         /// <summary>
         /// Gets the <see cref="ConversationState"/> object for the conversation.

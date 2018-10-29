@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Bot.Builder.Dialogs;
 
 namespace FFBot
 {
@@ -145,6 +146,8 @@ namespace FFBot
                 {
                     TopicState = conversationState.CreateProperty<TopicState>("TopicState"),
                     UserProfile = userState.CreateProperty<UserProfile>("UserProfile"),
+                    DialogStateAccessor = conversationState.CreateProperty<DialogState>(FFBotAccessors.DialogStateAccessorName),
+
                 };
 
                 return accessors;

@@ -1,0 +1,6 @@
+﻿{
+"Patrick Mahomes":"1"
+"Aaron Rodgers":"2"
+"Kirk Cousins":"3"
+"Nathan Peterman":"32"
+}

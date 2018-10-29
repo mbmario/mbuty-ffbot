@@ -1,5 +1,16 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Schema;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 using System;
 using System.Collections.Generic;
@@ -30,9 +41,17 @@ namespace FFBot
     /// <seealso cref="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-2.1"/>
     public class FFBot : IBot
     {
+
+        private const string MainDialogId = "mainDialog";
+        private const string FFHelloDialogId = "FFHelloDialog";
+        private const string FFComplaintDialogId = "FFComplaintDialog";
+        private const string FFQuestionDialogId = "FFQuestionDialog";
+        private const string FFWDISDialogId = "FFWDISDialog";
+
+        private DialogSet _dialogs;
+
         private readonly FFBotAccessors _accessors;
         private readonly ILogger _logger;
-        private DialogSet _dialogs;
 
         public FFBot(FFBotAccessors accessors, ILoggerFactory loggerFactory)
         {
@@ -44,12 +63,29 @@ namespace FFBot
             _logger = loggerFactory.CreateLogger<FFBot>();
             _logger.LogTrace("ffbot turn start.");
             _accessors = accessors ?? throw new System.ArgumentNullException(nameof(accessors));
+
+            // Define the steps of the main dialog.
+            WaterfallStep[] steps = new WaterfallStep[]
+            {
+                MenuStepAsync,
+                HandleChoiceAsync,
+                LoopBackAsync,
+            };
+
+            // Create our bot's dialog set, adding a main dialog and the three component dialogs.
+            _dialogs = new DialogSet(_accessors.DialogStateAccessor)
+                .Add(new WaterfallDialog(MainDialogId, steps))
+                .Add(new FFComplaintDialog(FFComplaintDialogId))
+                .Add(new FFHelloDialog(FFHelloDialogId))
+                .Add(new FFQuestionDialog(FFQuestionDialogId))
+                .Add(new FFWDISDialog(FFWDISDialogId));
         }
+
 
         // Every conversation turn for our Echo Bot will call this method.
         public async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (turnContext == null) 
+            if (turnContext == null)
             {
                 throw new ArgumentNullException(nameof(turnContext));
             }
@@ -57,198 +93,128 @@ namespace FFBot
             // Handle Message activity type, which is the main activity type for shown within a conversational interface
             if (turnContext.Activity.Type == ActivityTypes.Message)
             {
-                // get states
-                var convo = await _accessors.TopicState.GetAsync(turnContext, () => new TopicState());
-                var user = await _accessors.UserProfile.GetAsync(turnContext, () => new UserProfile());
+                // Establish dialog state from the conversation state.
+                DialogContext dc = await _dialogs.CreateContextAsync(turnContext, cancellationToken);
 
-                // get prev response
-                var text = turnContext.Activity.Text;
+                // Get the user's info.
+                UserProfile userInfo = await _accessors.UserProfile.GetAsync(turnContext, () => new UserProfile(), cancellationToken);
 
-                //// TODO: shortcuts in case of card clicks
-                //if (text == "WDIS" || text == "Complaint")
-                //{
-                //    convo.Stage = text;
-                //    // save state
-                //    await _accessors.TopicState.SetAsync(turnContext, convo);
-                //    await _accessors.ConversationState.SaveChangesAsync(turnContext);
-                //}
+                // ONGOING DIALOG CASE: Continue any current dialog.
+                DialogTurnResult dialogTurnResult = await dc.ContinueDialogAsync();
 
-                // beginning round of questions to gather info
-                if (convo.Stage == "intro")
-                { 
-                    if (convo.Prompt == "hi")
+                // COMPLETED DIALOG CASE: last result was EndDialogAsync, process the result of any complete dialog
+                if (dialogTurnResult.Status is DialogTurnStatus.Complete)
+                {
+                    switch (dialogTurnResult.Result)
                     {
-                        await turnContext.SendActivityAsync("Hello! I'm the ffbot. Who are you?");
+                        case UserProfile upResult:
+                            // Store the results of FFHelloDialog
+                            await _accessors.UserProfile.SetAsync(turnContext, upResult, cancellationToken);
+                            //await _accessors.UserProfile.SetAsync(turnContext, upResult);
 
-                        // Set the Prompt to ask the next question for this conversation
-                        convo.Prompt = "askTeam";
-
-                        // save states
-                        await _accessors.TopicState.SetAsync(turnContext, convo);
-                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                            // now start our bot's main dialog.
+                            await dc.BeginDialogAsync(MainDialogId, null, cancellationToken);
+                            break;
+                        default:
+                            // We shouldn't get here, since the main dialog is designed to loop.
+                            break;
                     }
-                    else if (convo.Prompt == "askTeam")
-                    {
-                        // store intro's prompt's user
-                        user.UserName=text;
-
-                        // Use the user name to prompt the user for team name
-                        await turnContext.SendActivityAsync($"Hello, {user.UserName}. What's your team name?");
-
-                        // Set the Prompt to ask the next question for this conversation
-                        convo.Stage = "menu";
-                        convo.Prompt = "ask";
-
-                        // update states
-                        await _accessors.TopicState.SetAsync(turnContext, convo);
-                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
-
-                        await _accessors.UserProfile.SetAsync(turnContext, user);
-                        await _accessors.UserState.SaveChangesAsync(turnContext);
-
-                    }
-
                 }
 
-                // show menu in ask, process it in switch
-                else if (convo.Stage == "menu")
+                // INACTIVE DIALOG CASE: Every dialog step sends a response, so if no response was sent,
+                //      then no dialog is currently active.
+                else if (!turnContext.Responded)
                 {
-                    if (convo.Prompt == "ask")
+                    if (string.IsNullOrEmpty(userInfo.UserName)) //string.IsNullOrEmpty(userInfo.Guest?.Name))
                     {
-                        // grab team name from previous
-                        user.TeamName = text;
-
-                        string teamStatement = $"{text} is a very clever name. ";
-                        await turnContext.SendActivityAsync(teamStatement);
-
-                        var optionsCard = CreateOptionsCardAttachment();
-                        var response = CreateResponse(turnContext.Activity, optionsCard);
-
-                        await turnContext.SendActivityAsync(response).ConfigureAwait(false);
-
-                        convo.Prompt = "fork";
-
-                        // update states
-                        await _accessors.TopicState.SetAsync(turnContext, convo);
-                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
-
-                        await _accessors.UserProfile.SetAsync(turnContext, user);
-                        await _accessors.UserState.SaveChangesAsync(turnContext);
-
-                    }
-                    else if (convo.Prompt == "fork")
-                    {
-                        // grab suggested actions from previous. Set that as the stage
-                        var choice = text;
-                        convo.Stage = choice;
-                        convo.Prompt = "1";
-
-                        // save state
-                        await _accessors.TopicState.SetAsync(turnContext, convo);
-                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
-
-                        if (choice == "WDIS")
-                        {
-                            await turnContext.SendActivityAsync($"Which two players are you choosing between?");
-                        }
-                        else if (choice == "Complaint")
-                        {
-                            await turnContext.SendActivityAsync($"Ok! What do you have to say?");
-                        }
-                        else if (choice == "Question")
-                        {
-                            await turnContext.SendActivityAsync($"");
-                        }
-                        else
-                        {
-                            await turnContext.SendActivityAsync($"Tell me a little bit about yourself.");
-                            convo.Stage = "Lonely";
-
-                            // save default state
-                            await _accessors.TopicState.SetAsync(turnContext, convo);
-                            await _accessors.ConversationState.SaveChangesAsync(turnContext);
-
-                        }
-
-                    }
-                }
-                else if (convo.Stage == "WDIS")
-                {
-
-                    string player1 = "";
-                    string player2 = "";
-
-                    if (text.Contains("or"))
-                    {
-                        player1 = Regex.Split(text, " or ")[0];
-                        player2 = Regex.Split(text, " or ")[1];
-                    }
-                    else if (text.Contains(" and "))
-                    {
-                        player1 = Regex.Split(text, " and ")[0];
-                        player2 = Regex.Split(text, " and ")[1];
-                    }
-
-                    if (text.Contains(" or ") || text.Contains(" and "))
-                    {
-                        string[] players = { player1, player2 };
-                        Random ran = new Random();
-                        string choice = players[ran.Next(0, players.Length)];
-                        await turnContext.SendActivityAsync($"Start {choice}.");
-
-                        convo.Stage = "";
-                        await _accessors.TopicState.SetAsync(turnContext, convo);
-                        await _accessors.ConversationState.SaveChangesAsync(turnContext);
+                        // If we don't yet have the guest's info, start the check-in dialog.
+                        await dc.BeginDialogAsync(FFHelloDialogId, null, cancellationToken);
                     }
                     else
                     {
-                        await turnContext.SendActivityAsync($"Sorry, I didn't get that.");
-
+                        // Otherwise, start our bot's main dialog.
+                        await dc.BeginDialogAsync(MainDialogId, null, cancellationToken);
                     }
                 }
-                else if (convo.Stage == "Complaint")
-                {
-                    await turnContext.SendActivityAsync($"Thank you for your input.");
-                    convo.Stage = "";
-                    await _accessors.TopicState.SetAsync(turnContext, convo);
-                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
-                }
-                else if (convo.Stage == "Question")
-                {
-                    await turnContext.SendActivityAsync($"This feature coming soon.");
-                    convo.Stage = "";
-                    await _accessors.TopicState.SetAsync(turnContext, convo);
-                    await _accessors.ConversationState.SaveChangesAsync(turnContext);
-                }
-                else
-                {
-                    string[] responses = { "Interesting, tell me more", "Why is that?", "How cool", "When did that start?" };
-                    Random ran = new Random();
-                    string reply = responses[ran.Next(0,responses.Length)];
-                    await turnContext.SendActivityAsync(reply);
-                }
+
+                // Save the new turn count into the conversation state.
+                await _accessors.ConversationState.SaveChangesAsync(turnContext, false, cancellationToken);
+                await _accessors.UserState.SaveChangesAsync(turnContext, false, cancellationToken);
+            }
+            else
+            {
+                await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
             }
         }
 
-        //// Creates and sends an activity with suggested actions to the user. 
-        //private static async Task SendSuggestedActionsAsync(ITurnContext turnContext, CancellationToken cancellationToken, String teamStatement)
-        //{
-        //    var reply = turnContext.Activity.CreateReply($"{teamStatement} What can I help you with?");
 
-        //    reply.SuggestedActions = new SuggestedActions()
-        //    {
-        //        Actions = new List<CardAction>()
-        //        {
-        //            new CardAction() { Title = "Which player should I start?", Type = ActionTypes.ImBack, Value = "WDIS" },
-        //            new CardAction() { Title = "I'd like to file a complaint or make a suggestion.", Type = ActionTypes.ImBack, Value = "Complaint" },
-        //            new CardAction() { Title = "I have a specific question.", Type = ActionTypes.ImBack, Value = "Question" },
-        //            new CardAction() { Title = "I just want someone to talk to", Type = ActionTypes.ImBack, Value = "Lonely" },
-        //        },
-        //    };
-        //    await turnContext.SendActivityAsync(reply, cancellationToken);
-        //}
 
-        // load attachment from file
+        private static async Task<DialogTurnResult> MenuStepAsync(
+            WaterfallStepContext stepContext,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // Present the user with a set of "suggested actions".
+            List<string> menu = new List<string> { "Who Do I Start?", "Ask a Question", "Suggestion or Complaint" };
+            await stepContext.Context.SendActivityAsync(
+                MessageFactory.SuggestedActions(menu, "How can I help you?"),
+                cancellationToken: cancellationToken);
+
+            //var optionsCard = CreateOptionsCardAttachment();
+            //var response = CreateResponse(turnContext.Activity, optionsCard);   
+            //await stepContext.Context.SendActivityAsync(response);
+
+            return Dialog.EndOfTurn;
+        }
+
+        private async Task<DialogTurnResult> HandleChoiceAsync(
+            WaterfallStepContext stepContext,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // Get the user's info. (Since the type factory is null, this will throw if state does not yet have a value for user info.)
+            UserProfile userInfo = await _accessors.UserProfile.GetAsync(stepContext.Context, null, cancellationToken);
+
+            // Check the user's input and decide which dialog to start.
+            // Pass in the guest info when starting either of the child dialogs.
+            string choice = (stepContext.Result as string)?.Trim()?.ToLowerInvariant();
+            switch (choice)
+            {
+                case "Who Do I Start?":
+                    return await stepContext.BeginDialogAsync(FFWDISDialogId, userInfo.UserName, cancellationToken);
+
+                case "Ask a Question":
+                    return await stepContext.BeginDialogAsync(FFQuestionDialogId, userInfo.UserName, cancellationToken);
+
+                case "Suggestion or Complaint":
+                    return await stepContext.BeginDialogAsync(FFComplaintDialogId, userInfo.UserName, cancellationToken);
+                default:
+                    // If user does something weird, start again from the beginning.
+                    await stepContext.Context.SendActivityAsync(
+                        "Sorry, I don't understand that command. Please choose an option from the list.");
+                    return await stepContext.ReplaceDialogAsync(MainDialogId, null, cancellationToken);
+            }
+        }
+
+        private async Task<DialogTurnResult> LoopBackAsync(
+            WaterfallStepContext stepContext,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // Get the user's info. (Because the type factory is null, this will throw if state does not yet have a value for user info.)
+            UserProfile userInfo = await _accessors.UserProfile.GetAsync(stepContext.Context, null, cancellationToken);
+
+            // Process the return value from the child dialog.
+            switch (stepContext.Result)
+            {
+                // if we were to store something, it would be here
+                default:
+                    break;
+
+
+
+            }
+
+            // Restart the main menu dialog.
+            return await stepContext.ReplaceDialogAsync(MainDialogId, null, cancellationToken);
+        }
 
         private Attachment CreateOptionsCardAttachment()
         {
