@@ -64,7 +64,7 @@ namespace FFBot
         WaterfallStepContext step,
         CancellationToken cancellationToken = default(CancellationToken))
         {
-            // Save the room number and "sign off".
+
             string team = step.Result as string;
             ((UserProfile)step.Values[UserKey]).TeamName = team;
 
@@ -72,7 +72,7 @@ namespace FFBot
                 "That's a very clever name!",
                 cancellationToken: cancellationToken);
 
-            // End the dialog, returning the guest info.
+
             return await step.EndDialogAsync(
                 (UserProfile)step.Values[UserKey],
                 cancellationToken);

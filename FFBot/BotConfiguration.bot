@@ -8,6 +8,13 @@
       "appId": "",
       "appPassword": "",
       "id": "1"
+    },
+    {
+      "type": "qna",
+      "name": "FFQnA",
+      "KbId": "d664a285-8e5f-4119-9b79-1e62fac70b2a",
+      "Hostname": "https://ffqna.azurewebsites.net/qnamaker",
+      "EndpointKey": "dd995e6b-b18f-4f0d-b764-b9d4c03acb20"
     }
   ],
   "padlock": "",

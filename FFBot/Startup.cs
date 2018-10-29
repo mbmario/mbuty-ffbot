@@ -1,11 +1,11 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
+﻿
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.AI.QnA;
 using Microsoft.Bot.Builder.Integration;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Configuration;
@@ -15,6 +15,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Configuration;
+using Microsoft.Bot.Schema;
 
 namespace FFBot
 {
@@ -73,6 +75,11 @@ namespace FFBot
                 }
 
                 options.CredentialProvider = new SimpleCredentialProvider(endpointService.AppId, endpointService.AppPassword);
+
+                // Initialize Bot Connected Services clients.
+                var connectedServices = InitBotServices(botConfig);
+                services.AddSingleton(sp => connectedServices);
+                services.AddSingleton(sp => botConfig); //?
 
                 // Creates a logger for the application to use.
                 ILogger logger = _loggerFactory.CreateLogger<FFBot>();
@@ -165,6 +172,56 @@ namespace FFBot
             app.UseDefaultFiles()
                 .UseStaticFiles()
                 .UseBotFramework();
+        }
+
+        // TODO: Need to get "BotServices" working here, is a Bot.Builder compatibility issue
+        private static BotServices InitBotServices(BotConfiguration config)
+        {
+            var qnaServices = new Dictionary<string, QnAMaker>();
+            foreach (var service in config.Services)
+            {
+                switch (service.Type)
+                {
+                    case ServiceTypes.QnA:
+                        {
+                            // Create a QnA Maker that is initialized and suitable for passing
+                            // into the IBot-derived class (QnABot).
+                            var qna = (QnAMakerService)service;
+                            if (qna == null)
+                            {
+                                throw new InvalidOperationException("The QnA service is not configured correctly in your '.bot' file.");
+                            }
+
+                            if (string.IsNullOrWhiteSpace(qna.KbId))
+                            {
+                                throw new InvalidOperationException("The QnA KnowledgeBaseId ('kbId') is required to run this sample. Please update your '.bot' file.");
+                            }
+
+                            if (string.IsNullOrWhiteSpace(qna.EndpointKey))
+                            {
+                                throw new InvalidOperationException("The QnA EndpointKey ('endpointKey') is required to run this sample. Please update your '.bot' file.");
+                            }
+
+                            if (string.IsNullOrWhiteSpace(qna.Hostname))
+                            {
+                                throw new InvalidOperationException("The QnA Host ('hostname') is required to run this sample. Please update your '.bot' file.");
+                            }
+
+                            var qnaEndpoint = new QnAMakerEndpoint()
+                            {
+                                KnowledgeBaseId = qna.KbId,
+                                EndpointKey = qna.EndpointKey,
+                                Host = qna.Hostname,
+                            };
+
+                            var qnaMaker = new QnAMaker(qnaEndpoint);
+                            qnaServices.Add(qna.Name, qnaMaker);
+                            break;
+                        }
+                }
+            }
+            var connectedServices = new BotServices(qnaServices); 
+            return connectedServices;
         }
     }
 }

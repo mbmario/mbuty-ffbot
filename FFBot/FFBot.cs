@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.Bot.Builder.AI.QnA;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder;
@@ -11,20 +12,9 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Linq;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Bot.Configuration;
 using Microsoft.Bot.Builder;
-using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace FFBot
 {
@@ -48,12 +38,15 @@ namespace FFBot
         private const string FFQuestionDialogId = "FFQuestionDialog";
         private const string FFWDISDialogId = "FFWDISDialog";
 
+        public static readonly string QnAMakerKey = "FFQnA";
+
         private DialogSet _dialogs;
 
         private readonly FFBotAccessors _accessors;
         private readonly ILogger _logger;
+        private readonly BotServices _services;
 
-        public FFBot(FFBotAccessors accessors, ILoggerFactory loggerFactory)
+        public FFBot(FFBotAccessors accessors, ILoggerFactory loggerFactory, BotServices services)
         {
             if (loggerFactory == null)
             {
@@ -63,6 +56,12 @@ namespace FFBot
             _logger = loggerFactory.CreateLogger<FFBot>();
             _logger.LogTrace("ffbot turn start.");
             _accessors = accessors ?? throw new System.ArgumentNullException(nameof(accessors));
+            _services = services ?? throw new System.ArgumentNullException(nameof(services));
+
+            if (!_services.QnAServices.ContainsKey(QnAMakerKey))
+            {
+                throw new System.ArgumentException($"Invalid configuration. Please check your '.bot' file for a QnA service named '{QnAMakerKey}'.");
+            }
 
             // Define the steps of the main dialog.
             WaterfallStep[] steps = new WaterfallStep[]
@@ -98,6 +97,19 @@ namespace FFBot
 
                 // Get the user's info.
                 UserProfile userInfo = await _accessors.UserProfile.GetAsync(turnContext, () => new UserProfile(), cancellationToken);
+
+                // QNA CASE: must be intercepted here because it doesn't seem to go in the Dialog
+                // Check QnA Maker model
+                var response = await _services.QnAServices[QnAMakerKey].GetAnswersAsync(turnContext);
+                if (response != null && response.Length > 0)
+                {
+                    await turnContext.SendActivityAsync(response[0].Answer, cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    var msg = @"Sorry, No QnA Maker answers were found.";
+                    await turnContext.SendActivityAsync(msg, cancellationToken: cancellationToken);
+                }
 
                 // ONGOING DIALOG CASE: Continue any current dialog.
                 DialogTurnResult dialogTurnResult = await dc.ContinueDialogAsync();
@@ -143,7 +155,7 @@ namespace FFBot
             }
             else
             {
-                await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
+                //await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
             }
         }
 
@@ -154,7 +166,7 @@ namespace FFBot
             CancellationToken cancellationToken = default(CancellationToken))
         {
             // Present the user with a set of "suggested actions".
-            List<string> menu = new List<string> { "Who Do I Start?", "Ask a Question", "Suggestion or Complaint" };
+            List<string> menu = new List<string> { "Whom Do I Start?", "Ask a Question", "Suggestion or Complaint" };
             await stepContext.Context.SendActivityAsync(
                 MessageFactory.SuggestedActions(menu, "How can I help you?"),
                 cancellationToken: cancellationToken);
@@ -178,10 +190,11 @@ namespace FFBot
             string choice = (stepContext.Result as string)?.Trim()?.ToLowerInvariant();
             switch (choice)
             {
-                case "Who Do I Start?":
+                case "Whom Do I Start?":
                     return await stepContext.BeginDialogAsync(FFWDISDialogId, userInfo.UserName, cancellationToken);
 
                 case "Ask a Question":
+                    // exists now outside of dialog space
                     return await stepContext.BeginDialogAsync(FFQuestionDialogId, userInfo.UserName, cancellationToken);
 
                 case "Suggestion or Complaint":

@@ -25,4 +25,3 @@ C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder 
 C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\FFBot\obj\Debug\netcoreapp2.0\FFBot.Resources.misc_d_k.resources
 C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\FFBot\obj\Debug\netcoreapp2.0\FFBot.Resources.QB_full_names.resources
 C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\FFBot\obj\Debug\netcoreapp2.0\FFBot.csproj.GenerateResource.cache
-C:\Users\mbuty\source\repos\Microsoft Bot Builder V4 SDK1\Microsoft Bot Builder V4 SDK1\FFBot\obj\Debug\netcoreapp2.0\FFBot.csprojAssemblyReference.cache

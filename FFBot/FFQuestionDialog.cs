@@ -22,60 +22,21 @@ namespace FFBot
             // Define the conversation flow using a waterfall model.
             WaterfallStep[] waterfallSteps = new WaterfallStep[]
             {
-            NameStepAsync,
-            TeamStepAsync,
             FinalStepAsync,
             };
             AddDialog(new WaterfallDialog(Id, waterfallSteps));
-        }
-
-        private static async Task<DialogTurnResult> NameStepAsync(
-        WaterfallStepContext step,
-        CancellationToken cancellationToken = default(CancellationToken))
-        {
-        // Clear the guest information and prompt for the user's name.
-        step.Values[UserKey] = new UserProfile();
-        return await step.PromptAsync(
-            TextPrompt,
-            new PromptOptions
-            {
-                Prompt = MessageFactory.Text("What is your name?"),
-            },
-            cancellationToken);
-        }
-
-        private static async Task<DialogTurnResult> TeamStepAsync(
-        WaterfallStepContext step,
-        CancellationToken cancellationToken = default(CancellationToken))
-        {
-            // Save the name and prompt for the team name.
-            string name = step.Result as string;
-            ((UserProfile)step.Values[UserKey]).UserName = name;
-            return await step.PromptAsync(
-                TextPrompt,
-                new PromptOptions
-                {
-                    Prompt = MessageFactory.Text($"Hi {name}. What is your team name?"),
-                },
-                cancellationToken);
         }
 
         private static async Task<DialogTurnResult> FinalStepAsync(
         WaterfallStepContext step,
         CancellationToken cancellationToken = default(CancellationToken))
         {
-            // Save the room number and "sign off".
-            string team = step.Result as string;
-            ((UserProfile)step.Values[UserKey]).TeamName = team;
-
+            // only have one step, because of the difficulty of passing service/key parameters
             await step.Context.SendActivityAsync(
-                "That's a very clever name!",
+                "What is your Question?",
                 cancellationToken: cancellationToken);
 
-            // End the dialog, returning the guest info.
-            return await step.EndDialogAsync(
-                (UserProfile)step.Values[UserKey],
-                cancellationToken);
+            return await step.EndDialogAsync(cancellationToken);
         }
     }
 }

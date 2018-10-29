@@ -54,8 +54,6 @@ namespace FFBot
                 "That's a valid point, we will take that into consideration.",
                 cancellationToken: cancellationToken);
 
-
-            // End the dialog, returning the guest info.
             return await step.EndDialogAsync(cancellationToken);
         }
     }
